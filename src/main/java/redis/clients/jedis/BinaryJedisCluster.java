@@ -67,6 +67,10 @@ public class BinaryJedisCluster implements BasicCommands, BinaryJedisClusterComm
     return connectionHandler.getNodes();
   }
 
+  public JedisClusterConnectionHandler getConnectionHandler() {
+    return connectionHandler;
+  }
+
   @Override
   public String set(final byte[] key, final byte[] value) {
     return new JedisClusterCommand<String>(connectionHandler, maxRedirections) {
