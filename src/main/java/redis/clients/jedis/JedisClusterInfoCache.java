@@ -1,15 +1,11 @@
 package redis.clients.jedis;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.util.SafeEncoder;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 public class JedisClusterInfoCache {
   private Map<String, JedisPool> nodes = new HashMap<String, JedisPool>();
@@ -84,6 +80,8 @@ public class JedisClusterInfoCache {
       try {
         this.slots.clear();
 
+        Set<String> nodesToRemove = new HashSet<String>(this.nodes.keySet());
+
         List<Object> slots = jedis.clusterSlots();
 
         for (Object slotInfoObj : slots) {
@@ -104,8 +102,14 @@ public class JedisClusterInfoCache {
           // at this time, we just use master, discard slave information
           HostAndPort targetNode = generateHostAndPort(hostInfos);
 
+          nodesToRemove.remove(getNodeKey(targetNode));
+
           setNodeIfNotExist(targetNode);
           assignSlotsToNode(slotNums, targetNode);
+        }
+
+        for (String key : nodesToRemove) {
+          this.nodes.remove(key);
         }
       } finally {
         rediscovering = false;
